@@ -1,0 +1,18 @@
+{
+	"server": {
+        "LogServer": 1,
+        "MongodbSessionServer": 1,
+        "AuthServer": 1,
+        "CommandServer": 3
+    },
+    "http": {
+        "port": 8000,
+        "path": "/",
+        "index": "web/index.html",
+        "staticsuffix": ".*\\.(css|js|json|png)$",
+        "static": "web/static/"
+    },
+    "sock": {
+        "prefix": "/sock"
+    }
+}

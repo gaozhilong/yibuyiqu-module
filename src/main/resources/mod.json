@@ -1,0 +1,16 @@
+{
+
+  "main":"org.jianyi.yibuyiqu.servers.socket.SocketJSServer",
+
+
+  "description":"服务器端应用，可以用作消息推送，改动后也可以作为手游服务器端使用",
+  "licenses": ["The Apache Software License Version 2.0"],
+  "author": "Gaozhilong",
+
+  // Optional fields
+  "developers": [],
+  "keywords": ["消息推送", "即时消息", "手游服务器"],
+  "homepage": "",
+
+  "auto-redeploy": true
+}

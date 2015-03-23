@@ -1,9 +1,8 @@
-# Vert.x Example Maven Project
+分布式消息推送服务器，可以作为各种服务器的后端使用，可以配置为定时推送或者即时消息发送。
+使用Vert.x部署本module，之后在EventBus中将需要推送的消息发送到server.proxy.sendalluser或者server.proxy.sendloginuser就可以将消息推送到全部连接的用户或者登录的用户。
+服务器中分为几个服务，日志服务，SockJS服务，会话管理服务，用户认证服务，命令执行服务。根据需要可以在部署的时候使用不同数量的实例（参照Vert.x文档）
+用户信息，必要的日志储存在MongoDB中。
+运行本module需要安装MongoDB，请自行安装。module中提供了页面可以进行登录的简单测试，根据需要可以增加用户注册等功能。
+目前只具备了基本功能。
 
-Example project for creating a Vert.x module with a Gradle build.
-
-By default this module contains a simple Java verticle which listens on the event bus and responds to `ping!`
-messages with `pong!`.
-
-This example also shows you how to write tests in Java, Groovy, Ruby and Python
 

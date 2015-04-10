@@ -11,11 +11,9 @@ import org.vertx.java.core.json.JsonObject;
  */
 public class CommandUtil {
 	
+	public static final String COMMAND_TYPE = "command";
+	
 	public static final String CMD_SESSIONID = "sessionID";
-	
-	public static final String CMD_LOGIN = "login";
-	
-	public static final String CMD_LOGOUT = "logout";
 	
 	public static final String CMD_RESULT = "result";
 	
@@ -40,6 +38,31 @@ public class CommandUtil {
 			e.printStackTrace();
 		}
 		return cmd;
+	}
+	
+	public static Command createCommand(JsonObject message) {
+		Command command = null;
+		if (message != null) {
+			String type = message.getString(COMMAND_TYPE);
+			String sessionId = message.getString(CMD_SESSIONID);
+			message.removeField(COMMAND_TYPE);
+			command = new Command(sessionId, type, message.toMap());
+		}
+		return command;
+	}
+	
+	public static Command createCommand(String input) {
+		Command command = null;
+		try {
+			JsonObject message = new JsonObject(input);
+			String type = message.getString(COMMAND_TYPE);
+			String sessionId = message.getString(CMD_SESSIONID);
+			message.removeField(COMMAND_TYPE);
+			command = new Command(sessionId, type, message.toMap());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return command;
 	}
 
 }

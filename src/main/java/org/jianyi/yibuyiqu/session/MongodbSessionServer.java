@@ -138,7 +138,7 @@ public class MongodbSessionServer extends Verticle {
 		BasicDBObject query = new BasicDBObject("sessionID", message.body()
 				.getString("sessionID"));
 		WriteResult result = coll.remove(query);
-		result = coll.insert(query);
+		result = coll.remove(query);
 		if (result.getN() == 0) {
 			Set<String> set = vertx.sharedData().getSet("users");
 			set.remove(message.body().getString("sessionID"));

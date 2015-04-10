@@ -4,13 +4,16 @@
 package org.jianyi.yibuyiqu.servers.socket;
 
 import java.io.File;
+import java.util.Map;
 import java.util.Set;
 
 import org.jianyi.yibuyiqu.command.CommandUtil;
 import org.jianyi.yibuyiqu.servers.auth.AuthServer;
-import org.jianyi.yibuyiqu.servers.command.CommandServer;
+import org.jianyi.yibuyiqu.servers.command.LoginCommandService;
+import org.jianyi.yibuyiqu.servers.input.InputServer;
 import org.jianyi.yibuyiqu.servers.log.LogServer;
 import org.jianyi.yibuyiqu.session.MongodbSessionServer;
+import org.jianyi.yibuyiqu.utils.JsonUril;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.AsyncResultHandler;
 import org.vertx.java.core.Handler;
@@ -30,19 +33,24 @@ import org.vertx.java.platform.Verticle;
  */
 public class SocketJSServer extends Verticle {
 	
-	JsonObject serverCfg, httpserverCfg, sockJsCfg;
+	JsonObject serverCfg, httpserverCfg, sockJsCfg, commandCfg;
 
 	public void start() {
 		serverCfg = container.config().getObject("server");
 		httpserverCfg = container.config().getObject("http");
 		sockJsCfg = container.config().getObject("sock");
+		commandCfg = container.config().getObject("commands");
 		
 		container.deployVerticle(LogServer.class.getName(),null, serverCfg.getInteger("LogServer"), doneHandler);
+		container.deployVerticle(InputServer.class.getName(),null, serverCfg.getInteger("InputServer"), doneHandler);
 		container.deployWorkerVerticle(MongodbSessionServer.class.getName(),null, serverCfg.getInteger("MongodbSessionServer"), true, doneHandler);
 		container.deployWorkerVerticle(AuthServer.class.getName(), null, serverCfg.getInteger("AuthServer"),
 				true, doneHandler);
-		container.deployWorkerVerticle(CommandServer.class.getName(), null, serverCfg.getInteger("CommandServer"),
+		container.deployWorkerVerticle(LoginCommandService.class.getName(), null, serverCfg.getInteger("LoginCommandService"),
 				true, doneHandler);
+		final Map<String,String> commandMap = JsonUril.jsonToMapString(commandCfg.toString());
+		Map<String, String> commands = vertx.sharedData().getMap("commandMap");
+		commands.putAll(commandMap);
 
 		HttpServer server = vertx.createHttpServer();
 		RouteMatcher httpRouteMatcher = new RouteMatcher();
@@ -81,20 +89,19 @@ public class SocketJSServer extends Verticle {
 						set.add(sock.writeHandlerID());
 						sock.dataHandler(new Handler<Buffer>() {
 							public void handle(Buffer data) {
-								JsonObject cmd = CommandUtil.getCommands(
-										data.toString(), sock.writeHandlerID());
-								vertx.eventBus().send("server.command.execute",
-										cmd,
-										new Handler<Message<JsonObject>>() {
-											@Override
-											public void handle(
-													Message<JsonObject> reply) {
-												if (reply.body().size() > 0) {
-													sock.write(new Buffer(reply
-														.body().toString()));
-												}
-											}
-										});
+								JsonObject message = null;
+								try {
+									message = new JsonObject(data.toString());
+									message.putString(CommandUtil.CMD_SESSIONID, sock.writeHandlerID());
+									vertx.eventBus().send("server.input",message.toString());
+								} catch (Exception e) {
+									JsonObject log = new JsonObject();
+									log.putString("type", "用户命令-命令格式错误，不是有效的JSON字符串");
+									log.putString("result", "用户命令-命令格式错误，不是有效的JSON字符串");
+									vertx.eventBus().send("server.log",
+											log);
+									vertx.eventBus().send(sock.writeHandlerID(), new Buffer("用户命令-命令格式错误，不是有效的JSON字符串"));
+								}
 							}
 						});
 
@@ -150,6 +157,12 @@ public class SocketJSServer extends Verticle {
 						}
 					}
 				});
+		
+		/*vertx.setPeriodic(100, new Handler<Long>() {
+			public void handle(Long timerID) {
+				vertx.eventBus().send("server.command.execute", String.valueOf(timerID));
+			}
+		});*/
 
 	}
 

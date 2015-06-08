@@ -4,15 +4,10 @@
 package org.jianyi.yibuyiqu.servers.socket;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.jianyi.yibuyiqu.command.CommandUtil;
-import org.jianyi.yibuyiqu.servers.auth.AuthServer;
-import org.jianyi.yibuyiqu.servers.command.LoginCommandService;
-import org.jianyi.yibuyiqu.servers.input.InputServer;
-import org.jianyi.yibuyiqu.servers.log.LogServer;
-import org.jianyi.yibuyiqu.session.MongodbSessionServer;
 import org.jianyi.yibuyiqu.utils.JsonUril;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.AsyncResultHandler;
@@ -32,48 +27,39 @@ import org.vertx.java.platform.Verticle;
  *
  */
 public class SocketJSServer extends Verticle {
-	
-	JsonObject serverCfg, httpserverCfg, sockJsCfg, commandCfg;
 
 	public void start() {
-		serverCfg = container.config().getObject("server");
-		httpserverCfg = container.config().getObject("http");
-		sockJsCfg = container.config().getObject("sock");
-		commandCfg = container.config().getObject("commands");
-		
-		container.deployVerticle(LogServer.class.getName(),null, serverCfg.getInteger("LogServer"), doneHandler);
-		container.deployVerticle(InputServer.class.getName(),null, serverCfg.getInteger("InputServer"), doneHandler);
-		container.deployWorkerVerticle(MongodbSessionServer.class.getName(),null, serverCfg.getInteger("MongodbSessionServer"), true, doneHandler);
-		container.deployWorkerVerticle(AuthServer.class.getName(), null, serverCfg.getInteger("AuthServer"),
-				true, doneHandler);
-		container.deployWorkerVerticle(LoginCommandService.class.getName(), null, serverCfg.getInteger("LoginCommandService"),
-				true, doneHandler);
-		final Map<String,String> commandMap = JsonUril.jsonToMapString(commandCfg.toString());
-		Map<String, String> commands = vertx.sharedData().getMap("commandMap");
-		commands.putAll(commandMap);
-
+		final JsonObject httpserverCfg = container.config();
+		final String servername = httpserverCfg.getString("name");
 		HttpServer server = vertx.createHttpServer();
 		RouteMatcher httpRouteMatcher = new RouteMatcher();
 
-		httpRouteMatcher.get(httpserverCfg.getString("path"), new Handler<HttpServerRequest>() {
-			@Override
-			public void handle(final HttpServerRequest request) {
-				request.response().sendFile(httpserverCfg.getString("index"));
-			}
-		});
-		
-		httpRouteMatcher.get(httpserverCfg.getString("staticsuffix"), new Handler<HttpServerRequest>() {
-			@Override
-			public void handle(final HttpServerRequest request) {
-				request.response().sendFile(httpserverCfg.getString("static") + new File(request.path()));
-			}
-		});
+		httpRouteMatcher.get(httpserverCfg.getString("path"),
+				new Handler<HttpServerRequest>() {
+					@Override
+					public void handle(final HttpServerRequest request) {
+						request.response().sendFile(
+								httpserverCfg.getString("static")+httpserverCfg.getString("index"));
+					}
+				});
+
+		httpRouteMatcher.get(httpserverCfg.getString("staticsuffix"),
+				new Handler<HttpServerRequest>() {
+					@Override
+					public void handle(final HttpServerRequest request) {
+						request.response().sendFile(
+								httpserverCfg.getString("static")
+										+ new File(request.path()));
+					}
+				});
 
 		server.requestHandler(httpRouteMatcher);
 
 		SockJSServer sockServer = vertx.createSockJSServer(server);
 
-		sockServer.installApp(new JsonObject().putString("prefix", sockJsCfg.getString("prefix")),
+		sockServer.installApp(
+				new JsonObject().putString("prefix",
+						httpserverCfg.getString("prefix")),
 				new Handler<SockJSSocket>() {
 					public void handle(final SockJSSocket sock) {
 						container.logger().info(
@@ -81,100 +67,102 @@ public class SocketJSServer extends Verticle {
 										+ sock.writeHandlerID());
 						JsonObject log = new JsonObject();
 						log.putString("type", "客户端连接！");
-						log.putString("ip", String.valueOf(sock.remoteAddress()));
-						vertx.eventBus().send("server.log",log);
-						
-						//hornetqServer.createQueue(sock.writeHandlerID());
-						Set<String> set = vertx.sharedData().getSet("allusers");
-						set.add(sock.writeHandlerID());
+						log.putString("ip",
+								String.valueOf(sock.remoteAddress()));
+						vertx.eventBus().send("server.log", log);
+
+						// hornetqServer.createQueue(sock.writeHandlerID());
+						Map<String,String> map = vertx.sharedData().getMap("allusers");
+						Map<String, String> clientMap = new HashMap<String, String>();
+						clientMap.put(CommandUtil.CMD_PROXYNAME, servername);
+						map.put(sock.writeHandlerID(), JsonUril.objectToJsonStr(clientMap));
 						sock.dataHandler(new Handler<Buffer>() {
 							public void handle(Buffer data) {
 								JsonObject message = null;
 								try {
 									message = new JsonObject(data.toString());
 									message.putString(CommandUtil.CMD_SESSIONID, sock.writeHandlerID());
-									vertx.eventBus().send("server.input",message.toString());
+									message.putString(CommandUtil.CMD_PROXYNAME, servername);
+									vertx.eventBus().send("server.input",
+											message.toString());
 								} catch (Exception e) {
 									JsonObject log = new JsonObject();
-									log.putString("type", "用户命令-命令格式错误，不是有效的JSON字符串");
-									log.putString("result", "用户命令-命令格式错误，不是有效的JSON字符串");
-									vertx.eventBus().send("server.log",
-											log);
-									vertx.eventBus().send(sock.writeHandlerID(), new Buffer("用户命令-命令格式错误，不是有效的JSON字符串"));
+									log.putString("type",
+											"用户命令-命令格式错误，不是有效的JSON字符串");
+									log.putString("result",
+											"用户命令-命令格式错误，不是有效的JSON字符串");
+									vertx.eventBus().send("server.log", log);
+									vertx.eventBus()
+											.send(sock.writeHandlerID(),
+													new Buffer(
+															"用户命令-命令格式错误，不是有效的JSON字符串"));
 								}
 							}
 						});
 
 					}
 				});
-		
+
 		server.listen(httpserverCfg.getInteger("port"));
 
-		/*long timerID = vertx.setPeriodic(10000, new Handler<Long>() {
-			public void handle(Long timerID) {
-				Set<String> set = vertx.sharedData().getSet("allusers");
-				for (String usr : set) {
-					String msg = "dsdasdasd";
-					if (msg != null) {
-						vertx.eventBus().send(usr,
-								new Buffer(msg));
-					}
-				}
-				container.logger().info("And every second this is printed");
-			}
-		});*/
-		
-		vertx.eventBus().registerHandler("server.proxy.send",
+		/*
+		 * long timerID = vertx.setPeriodic(10000, new Handler<Long>() { public
+		 * void handle(Long timerID) { Set<String> set =
+		 * vertx.sharedData().getSet("allusers"); for (String usr : set) {
+		 * String msg = "dsdasdasd"; if (msg != null) {
+		 * vertx.eventBus().send(usr, new Buffer(msg)); } }
+		 * container.logger().info("And every second this is printed"); } });
+		 */
+
+		vertx.eventBus().registerHandler("server." + servername + ".send",
 				new Handler<Message<JsonObject>>() {
 					@Override
 					public void handle(Message<JsonObject> message) {
 						if (message.body().size() > 0) {
-							vertx.eventBus().send(message.body().getString(CommandUtil.CMD_SESSIONID), new Buffer(message.body().getString(CommandUtil.CMD_MESSAGE)));
+							vertx.eventBus().send(
+									message.body().getString(
+											CommandUtil.CMD_SESSIONID),
+									new Buffer(message.body().getString(
+											CommandUtil.CMD_MESSAGE)));
 						}
 					}
 				});
-		vertx.eventBus().registerHandler("server.proxy.sendloginuser",
+		/*vertx.eventBus().registerHandler(
+				"server." + servername + ".sendloginuser",
 				new Handler<Message<JsonObject>>() {
 					@Override
 					public void handle(Message<JsonObject> message) {
 						if (message.body().size() > 0) {
-							Set<String> set = vertx.sharedData().getSet("users");
+							Set<String> set = vertx.sharedData()
+									.getSet("users");
 							for (String usr : set) {
-								vertx.eventBus().send(usr, new Buffer(message.body().getString(CommandUtil.CMD_MESSAGE)));
+								vertx.eventBus().send(
+										usr,
+										new Buffer(message.body().getString(
+												CommandUtil.CMD_MESSAGE)));
 							}
 						}
 					}
-				});
-		vertx.eventBus().registerHandler("server.proxy.sendalluser",
-				new Handler<Message<JsonObject>>() {
-					@Override
-					public void handle(Message<JsonObject> message) {
-						if (message.body().size() > 0) {
-							Set<String> set = vertx.sharedData().getSet("allusers");
-							for (String usr : set) {
-								vertx.eventBus().send(usr, new Buffer(message.body().getString(CommandUtil.CMD_MESSAGE)));
-							}
-						}
-					}
-				});
+				});*/
 		
-		/*vertx.setPeriodic(100, new Handler<Long>() {
-			public void handle(Long timerID) {
-				vertx.eventBus().send("server.command.execute", String.valueOf(timerID));
-			}
-		});*/
+
+		/*
+		 * vertx.setPeriodic(100, new Handler<Long>() { public void handle(Long
+		 * timerID) { vertx.eventBus().send("server.command.execute",
+		 * String.valueOf(timerID)); } });
+		 */
 
 	}
 
 	public void stop() {
-		
+
 	}
 
 	AsyncResultHandler<String> doneHandler = new AsyncResultHandler<String>() {
 		public void handle(AsyncResult<String> asyncResult) {
 			if (asyncResult.succeeded()) {
 				System.out
-						.println("The verticle has been deployed, deployment ID is rewrwerewrwe "
+						.println("The verticle has been deployed, deployment ID is "
 								+ asyncResult.result());
 			} else {
 				asyncResult.cause().printStackTrace();

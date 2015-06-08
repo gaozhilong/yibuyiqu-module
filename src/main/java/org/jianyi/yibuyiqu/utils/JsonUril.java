@@ -29,6 +29,19 @@ public class JsonUril {
 		return json;
 	}
 	
+	public static String objectToJsonStr(Object obj) {
+		ObjectWriter ow = new ObjectMapper().writer()
+				.withDefaultPrettyPrinter();
+		String jsonStr = null;
+		try {
+			jsonStr = ow.writeValueAsString(obj);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return jsonStr;
+	}
+	
 	
 	public static Map<String, Object> jsonToMapObject(String json) {
 		Map<String, Object> map = new HashMap<String, Object>();

@@ -1,6 +1,8 @@
 package org.jianyi.yibuyiqu.servers.command;
 
-import org.jianyi.yibuyiqu.command.Result;
+import java.util.Map;
+
+import org.jianyi.yibuyiqu.command.CommandUtil;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.platform.Verticle;
 
@@ -9,15 +11,9 @@ public abstract class CommandService extends Verticle{
 	public void execute(String commandJson) {}
 	//发送消息到制定客户端
 	public void sendMsg(JsonObject msg) {
-		vertx.eventBus().send("server.proxy.send", msg);
+		Map<String,String> map = vertx.sharedData().getMap("allusers");
+		JsonObject json = new JsonObject(map.get(msg.getString(CommandUtil.CMD_SESSIONID)));
+		vertx.eventBus().send("server."+json.getString(CommandUtil.CMD_PROXYNAME)+".send", msg);
 	}
 	
-	public void sendNullCommandMsg() {
-		Result result = new Result(null, "命令为空", "error");
-		JsonObject log = new JsonObject();
-		log.putString("type", "用户命令-命令为空");
-		log.putString("result", "命令为空");
-		vertx.eventBus().send("server.log", log);
-		sendMsg(result.toJsonObject());
-	}
 }

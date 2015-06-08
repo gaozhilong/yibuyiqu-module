@@ -34,12 +34,7 @@ public class LoginCommandService extends CommandService{
             public Boolean call(Command command) {
                 return command == null;
             }
-        }).subscribe(new Action1<Command>() {  
-	        @Override  
-	        public void call(Command command) {
-	        	sendNullCommandMsg();
-	        }  
-	    });
+        });
 		
 		Observable.just(command).filter(new Func1<Command, Boolean>() {
             @Override
@@ -56,6 +51,8 @@ public class LoginCommandService extends CommandService{
 						command.getParamStringValue("username"));
 				loginMsg.putString("password",
 						command.getParamStringValue("password"));
+				loginMsg.putString(CommandUtil.CMD_PROXYNAME,
+						command.getParamStringValue(CommandUtil.CMD_PROXYNAME));
 				vertx.eventBus().send("server.author.login",
 						loginMsg,
 						new Handler<Message<Boolean>>() {

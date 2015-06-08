@@ -15,6 +15,8 @@ public class CommandUtil {
 	
 	public static final String CMD_SESSIONID = "sessionID";
 	
+	public static final String CMD_PROXYNAME = "proxy";
+	
 	public static final String CMD_RESULT = "result";
 	
 	public static final String CMD_MESSAGE = "message";

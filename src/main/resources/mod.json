@@ -1,15 +1,15 @@
 {
 
-  "main":"org.jianyi.yibuyiqu.servers.socket.SocketJSServer",
+  "main":"org.jianyi.yibuyiqu.Application",
 
 
-  "description":"服务器端应用，可以用作消息推送，改动后也可以作为手游服务器端使用",
+  "description":"sockjs，websocket服务器",
   "licenses": ["The Apache Software License Version 2.0"],
   "author": "Gaozhilong",
 
   // Optional fields
   "developers": [],
-  "keywords": ["消息推送", "即时消息", "手游服务器"],
+  "keywords": ["comet", "chat", "game server"],
   "homepage": "",
 
   "auto-redeploy": true

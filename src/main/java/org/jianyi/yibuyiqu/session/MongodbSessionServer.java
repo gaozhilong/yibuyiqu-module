@@ -4,8 +4,11 @@
 package org.jianyi.yibuyiqu.session;
 
 import java.net.UnknownHostException;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.jianyi.yibuyiqu.command.CommandUtil;
+import org.jianyi.yibuyiqu.utils.JsonUril;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.json.JsonObject;
@@ -111,8 +114,10 @@ public class MongodbSessionServer extends Verticle {
 		BasicDBObject doc = new BasicDBObject(message.body().toMap());
 		WriteResult result = coll.insert(doc);
 		if (result.getN() == 0) {
-			Set<String> set = vertx.sharedData().getSet("users");
-			set.add(message.body().getString("sessionID"));
+			Map<String,String> map = vertx.sharedData().getMap("users");
+			Map<String, String> clientMap = new HashMap<String, String>();
+			clientMap.put(CommandUtil.CMD_PROXYNAME, message.body().getString(CommandUtil.CMD_PROXYNAME));
+			map.put(message.body().getString("sessionID"), JsonUril.objectToJsonStr(clientMap));
 			sucess = true;
 		}
 		return sucess;
@@ -140,8 +145,8 @@ public class MongodbSessionServer extends Verticle {
 		WriteResult result = coll.remove(query);
 		result = coll.remove(query);
 		if (result.getN() == 0) {
-			Set<String> set = vertx.sharedData().getSet("users");
-			set.remove(message.body().getString("sessionID"));
+			Map<String,String> map = vertx.sharedData().getMap("users");
+			map.remove(message.body().getString("sessionID"));
 			sucess = true;
 		}
 		return sucess;
@@ -153,8 +158,8 @@ public class MongodbSessionServer extends Verticle {
 				.getString("sessionID"));
 		WriteResult result = coll.remove(query);
 		if (result.getN() == 1) {
-			Set<String> set = vertx.sharedData().getSet("users");
-			set.remove(message.body().getString("sessionID"));
+			Map<String,String> map = vertx.sharedData().getMap("users");
+			map.remove(message.body().getString("sessionID"));
 			sucess = true;
 		}
 		return sucess;

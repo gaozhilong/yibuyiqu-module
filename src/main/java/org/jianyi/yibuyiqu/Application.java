@@ -15,7 +15,7 @@ import org.vertx.java.platform.Verticle;
 
 public class Application extends Verticle {
 	
-	JsonObject httpserverCfg, sockJsCfg;
+JsonObject httpserverCfg, sockJsCfg;
 	
 	JsonArray proxyCfg,serverCfg, commandCfg;
 	

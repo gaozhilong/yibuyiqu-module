@@ -37,9 +37,16 @@ public class InputServer extends Verticle {
 												.getString(CommandUtil.COMMAND_TYPE);
 										if (type != null
 												&& commandMap.containsKey(type)) {
+											logCall(message);
 											vertx.eventBus().send(
 													commandMap.get(type),
-													command);
+													command,new Handler<Message<JsonObject>>() {
+														@Override
+														public void handle(Message<JsonObject> reply) {
+															// TODO Auto-generated method stub
+															log(reply.body());
+														}
+													});
 										} else {
 											String msg = "命令没有相应的处理服务";
 											if (type == null) {
@@ -47,17 +54,42 @@ public class InputServer extends Verticle {
 											}
 											Result result = new Result(
 													sessionId, msg, "error");
-											JsonObject log = new JsonObject();
-											log.putString("type", "用户命令-" + msg);
-											log.putString("result", msg);
-											vertx.eventBus().send("server.log",
-													log);
+											log(result);
 											sendMsg(result.toJsonObject());
 										}
 									}
 								});
 					}
 				});
+	}
+	
+	private void logCall(JsonObject message) {
+		JsonObject log = new JsonObject();
+		String type = message.getString(CommandUtil.COMMAND_TYPE);
+		String sessionId = message.getString(CommandUtil.CMD_SESSIONID);
+		log.putString("type", type);
+		//log.putString("username", message.getString("username"));
+		log.putString("sessionID", sessionId);
+		log.putString("result",	"call");
+		vertx.eventBus().send("server.log", log);
+	}
+	
+	private void log(Result result) {
+		JsonObject log = new JsonObject();
+		log.putString("type", "用户命令-" + result.getResult());
+		log.putString("sessionID", result.getSessionID());
+		log.putString("result", result.getMessage());
+		vertx.eventBus().send("server.log",
+				log);
+	}
+	
+	private void log(JsonObject result) {
+		JsonObject log = new JsonObject();
+		log.putString("type", "用户命令执行结果");
+		log.putString("sessionID", result.getString(CommandUtil.CMD_SESSIONID));
+		log.putString("result", result.getString(CommandUtil.CMD_RESULT));
+		log.putString("message", result.getString(CommandUtil.CMD_MESSAGE));
+		vertx.eventBus().send("server.log",	log);
 	}
 
 	public void sendMsg(JsonObject msg) {

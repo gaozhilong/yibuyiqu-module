@@ -1,0 +1,81 @@
+{
+	"proxyserver": [
+        {
+        	"name": "proxy1",
+        	"port": 8000,
+        	"path": "/",
+	        "index": "index.html",
+	        "staticsuffix": ".*\\.(css|js|json|png)$",
+	        "static": "web/",
+	        "prefix": "/sock"
+        },
+        { 
+        	"name": "proxy2",
+        	"port": 8001,
+        	"path": "/",
+	        "index": "index.html",
+	        "staticsuffix": ".*\\.(css|js|json|png)$",
+	        "static": "web/",
+	        "prefix": "/sock"
+        },
+        { 
+        	"name": "proxy3",
+        	"port": 8002,
+        	"path": "/",
+	        "index": "index.html",
+	        "staticsuffix": ".*\\.(css|js|json|png)$",
+	        "static": "web/",
+	        "prefix": "/sock"
+        }
+    ],
+	"server": [
+		{
+			"name": "LogServer",
+			"verticlefile": "org.jianyi.yibuyiqu.servers.log.LogServer",
+			"instance": 1,
+			"worker": false
+		},
+		{
+			"name": "MongodbSessionServer",
+			"verticlefile": "org.jianyi.yibuyiqu.session.MongodbSessionServer",
+			"instance": 1,
+			"worker": true
+		},
+		{
+			"name": "AuthServer",
+			"verticlefile": "org.jianyi.yibuyiqu.servers.auth.PostgresAuthServer",
+			"instance": 1,
+			"worker": true
+		},
+		{
+			"name": "InputServer",
+			"verticlefile": "org.jianyi.yibuyiqu.servers.input.InputServer",
+			"instance": 1,
+			"worker": false
+		},
+		{
+			"name": "LoginCommandService",
+			"verticlefile": "org.jianyi.yibuyiqu.servers.command.LoginCommandService",
+			"instance": 1,
+			"worker": true
+		}
+	],
+    "http": {
+        "path": "/",
+        "index": "web/index.html",
+        "staticsuffix": ".*\\.(css|js|json|png)$",
+        "static": "web/"
+    },
+    "sock": {
+        "prefix": "/sock"
+    },
+    "commands" : [
+    	{
+			"name": "login",
+			"verticlefile": "org.jianyi.yibuyiqu.servers.command.LoginCommandService",
+			"instance": 1,
+			"worker": true,
+			"address": "server.command.login"
+		}
+    ]
+}

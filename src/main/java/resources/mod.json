@@ -1,0 +1,16 @@
+{
+
+  "main":"org.jianyi.yibuyiqu.Application",
+
+
+  "description":"sockjs，websocket服务器",
+  "licenses": ["The Apache Software License Version 2.0"],
+  "author": "Gaozhilong",
+
+  // Optional fields
+  "developers": [],
+  "keywords": ["comet", "chat", "game server"],
+  "homepage": "",
+
+  "auto-redeploy": true
+}

@@ -119,11 +119,11 @@ public class SocketJSServer extends Verticle {
 					@Override
 					public void handle(Message<JsonObject> message) {
 						if (message.body().size() > 0) {
-							vertx.eventBus().send(
-									message.body().getString(
-											CommandUtil.CMD_SESSIONID),
-									new Buffer(message.body().getString(
-											CommandUtil.CMD_MESSAGE)));
+							JsonObject msg = message.body();
+							String sessionId = msg.getString(CommandUtil.CMD_SESSIONID);
+							msg.removeField(CommandUtil.CMD_SESSIONID);
+							System.out.println(msg.toString());
+							vertx.eventBus().send(sessionId, new Buffer(msg.toString()));
 						}
 					}
 				});

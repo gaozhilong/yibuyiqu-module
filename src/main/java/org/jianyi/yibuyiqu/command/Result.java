@@ -4,6 +4,9 @@ import org.vertx.java.core.json.JsonObject;
 
 public class Result {
 	
+	public static final String SUCCESS = "success";
+	public static final String ERROR = "error";
+	
 	private String sessionID;
 	private String message;
 	private String result;
